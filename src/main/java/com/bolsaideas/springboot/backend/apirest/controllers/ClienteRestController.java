@@ -19,7 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.bolsaideas.springboot.backend.apirest.models.entity.Cliente;
 import com.bolsaideas.springboot.backend.apirest.models.services.IClienteService;
 
-@CrossOrigin(origins = { "http://localhost:4200" }, methods = { RequestMethod.GET })
+@CrossOrigin(origins = { "http://localhost:4200" }, methods = { RequestMethod.GET, RequestMethod.POST,
+		RequestMethod.PUT, RequestMethod.DELETE })
 @RestController
 @RequestMapping("/api")
 public class ClienteRestController {
