@@ -1,8 +1,12 @@
 package com.bolsaideas.springboot.backend.apirest.controllers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -62,6 +66,14 @@ public class ClienteRestController {
 		Map<String, Object> response = new HashMap<>();
 		try {
 			newCliente = clienteService.save(cliente);
+		} catch (ConstraintViolationException e) {
+			response.put("error", "Error en la base de datos");
+			List<String> listaErrores = new ArrayList<String>();
+			for (ConstraintViolation<?> constraint : e.getConstraintViolations()) {
+				listaErrores.add(constraint.getMessage());
+			}
+			response.put("mensaje", listaErrores.toString());
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (DataAccessException e) {
 			response.put("error", "Error en la base de datos");
 			response.put("mensaje", e.getMostSpecificCause().getMessage());
