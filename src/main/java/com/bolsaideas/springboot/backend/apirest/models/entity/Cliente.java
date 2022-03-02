@@ -35,7 +35,7 @@ public class Cliente implements Serializable {
 	private String apellido;
 
 	@Column(nullable = false, unique = true)
-	@Email
+	@Email(message = "El formato del email es incorrecto")
 	private String email;
 
 	@Column(name = "create_at")

@@ -4,14 +4,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -61,9 +65,27 @@ public class ClienteRestController {
 
 	@PostMapping("/clientes")
 	@ResponseStatus(code = HttpStatus.CREATED)
-	public ResponseEntity<?> create(@RequestBody Cliente cliente) {
-		Cliente newCliente = null;
+	public ResponseEntity<?> create(@Valid @RequestBody Cliente cliente, BindingResult result) {
 		Map<String, Object> response = new HashMap<>();
+
+		ResponseEntity<?> resp = validErrors(result).orElse(null);
+		if (resp != null) {
+			return resp;
+		}
+
+//		if (result.hasErrors()) {
+//			List<String> errors = new ArrayList<>();
+//			for (FieldError err : result.getFieldErrors()) {
+//				errors.add("El campo '" + err.getField() + "' " + err.getDefaultMessage());
+//			}
+//			List<String> errors = result.getFieldErrors().stream()
+//					.map(err -> "El campo '" + err.getField() + "' " + err.getDefaultMessage())
+//					.collect(Collectors.toList());
+//			response.put("errors", errors);
+//			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.BAD_REQUEST);
+//		}
+		Cliente newCliente = null;
+
 		try {
 			newCliente = clienteService.save(cliente);
 		} catch (ConstraintViolationException e) {
@@ -73,7 +95,7 @@ public class ClienteRestController {
 				listaErrores.add(constraint.getMessage());
 			}
 			response.put("mensaje", listaErrores.toString());
-			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.BAD_REQUEST);
 		} catch (DataAccessException e) {
 			response.put("error", "Error en la base de datos");
 			response.put("mensaje", e.getMostSpecificCause().getMessage());
@@ -86,8 +108,11 @@ public class ClienteRestController {
 
 	@PutMapping("/clientes/{id}")
 //	@ResponseStatus(code = HttpStatus.CREATED)
-	public ResponseEntity<?> update(@RequestBody Cliente cliente, @PathVariable Long id) {
+	public ResponseEntity<?> update(@Valid @RequestBody Cliente cliente, BindingResult result, @PathVariable Long id) {
 		Map<String, Object> response = new HashMap<>();
+		ResponseEntity<?> resp = validErrors(result).orElse(null);
+		if (resp != null)
+			return resp;
 		Cliente clienteActual = clienteService.findById(id);
 		if (clienteActual == null) {
 			response.put("mensaje", "Error: no se pudo editar, el cliente ID: "
@@ -126,6 +151,22 @@ public class ClienteRestController {
 			response.put("mensaje", e.getMostSpecificCause().getMessage());
 			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+	}
+
+	public Optional<ResponseEntity<?>> validErrors(BindingResult result) {
+		Map<String, Object> response = new HashMap<>();
+		if (result.hasErrors()) {
+//			List<String> errors = new ArrayList<>();
+//			for (FieldError err : result.getFieldErrors()) {
+//				errors.add("El campo '" + err.getField() + "' " + err.getDefaultMessage());
+//			}
+			List<String> errors = result.getFieldErrors().stream()
+					.map(err -> "El campo '" + err.getField() + "' " + err.getDefaultMessage())
+					.collect(Collectors.toList());
+			response.put("errors", errors);
+			return Optional.of(new ResponseEntity<Map<String, Object>>(response, HttpStatus.BAD_REQUEST));
+		}
+		return Optional.empty();
 	}
 
 }
